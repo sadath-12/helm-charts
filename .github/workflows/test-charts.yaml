@@ -1,0 +1,58 @@
+name: Install and Test Helm Chart
+
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Install Kind
+      uses: helm/kind-action@v1.2.0
+
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: '3.6.0'
+
+    - name: Create Kind Cluster
+      run: |
+        kind create cluster
+
+    - name: Install yq
+      run: |
+        sudo snap install yq
+
+    - name: Install cert-manager CRDs and Helm Chart
+      run: |
+        helm repo add jetstack https://charts.jetstack.io
+        helm repo update
+
+        helm install cert-manager jetstack/cert-manager \
+          --namespace cert-manager \
+          --create-namespace \
+          --version v1.5.3 \
+          --set installCRDs=true
+
+    - name: Ensure cert-manager is fully deployed
+      run: |
+        kubectl rollout status deploy/cert-manager -n cert-manager
+        kubectl rollout status deploy/cert-manager-cainjector -n cert-manager
+        kubectl rollout status deploy/cert-manager-webhook -n cert-manager
+
+    - name: Install and test Redis Related Helm charts
+      run: |
+        kubectl cluster-info --context kind-kind
+        chart_dirs=("redis-operator" "redis" "redis-cluster" "redis-replication" "redis-sentinel")
+        for dir in "${chart_dirs[@]}"
+        do
+          chart_version=$(yq e .version ./charts/$dir/Chart.yaml)
+          echo "Installing $dir chart with version $chart_version..."
+          helm install $dir ./charts/$dir/ --version $chart_version
+          helm test $dir
+        done
+        echo "Listing installed Helm charts..."
+        helm ls

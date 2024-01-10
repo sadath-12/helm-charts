@@ -15,6 +15,10 @@ metadata:
     {{ $labelkey}}: {{ $labelvalue }}
 {{- end }}
 {{- end }}
+{{- with .Values.annotations }}
+  annotations:
+{{- toYaml . | nindent 6 }}
+{{- end }}
 spec:
   clusterSize: {{ .Values.redisCluster.clusterSize }}
   persistenceEnabled: {{ .Values.redisCluster.persistenceEnabled }}
@@ -86,9 +90,9 @@ spec:
   nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 4 }}
 {{- end }}
-{{- if .Values.securityContext }}
-  securityContext:
-{{ toYaml .Values.securityContext | indent 4 }}
+{{- if .Values.podSecurityContext }}
+  podSecurityContext:
+{{ toYaml .Values.podSecurityContext | indent 4 }}
 {{- end }}
 {{- if .Values.tolerations }}
   tolerations:

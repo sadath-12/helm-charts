@@ -110,9 +110,15 @@ storageSpec:
       resources:
         requests:
           storage: 1Gi
+  nodeConfVolumeClaimTemplate:
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
   #   selector: {}
 
-securityContext:
+podSecurityContext:
   runAsUser: 1000
   fsGroup: 1000
 
